@@ -119,7 +119,8 @@ class MainActivity : HelperBaseComponentActivity() {
             delay(6000)
 
             while (isActive) {
-                val serverList: List<String> = MmkvManager.decodeServerList("") ?: emptyList()
+                val currentGroupId = mainViewModel.uiState.value.selectedGroupId
+                val serverList: List<String> = MmkvManager.decodeServerList(currentGroupId) ?: emptyList()
 
                 val serversWithPing: List<Pair<String, Long>> = serverList.map { guid ->
                     val aff = MmkvManager.decodeServerAffiliationInfo(guid)
@@ -127,7 +128,6 @@ class MainActivity : HelperBaseComponentActivity() {
                     Pair(guid, ping)
                 }
 
-                // مرتب‌سازی لیست بر اساس کمترین پینگ
                 val sortedList: ArrayList<String> = ArrayList(
                     serversWithPing.sortedWith(
                         compareBy<Pair<String, Long>> { if (it.second > 0L) 0 else 1 }
@@ -135,12 +135,10 @@ class MainActivity : HelperBaseComponentActivity() {
                     ).map { it.first }
                 )
 
-                // ذخیره با ساختار دقیق MutableList
                 if (sortedList.isNotEmpty() && sortedList != serverList) {
-                    MmkvManager.encodeServerList(sortedList)
+                    MmkvManager.encodeServerList(currentGroupId, sortedList)
                 }
 
-                // انتخاب بهترین سرور
                 val bestServer = serversWithPing.filter { it.second > 0L }.minByOrNull { it.second }
                 bestServer?.let { target ->
                     val currentGuid = MmkvManager.getSelectServer()
