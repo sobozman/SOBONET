@@ -116,39 +116,47 @@ class MainActivity : HelperBaseComponentActivity() {
         smartMonitorJob = lifecycleScope.launch(Dispatchers.IO) {
             delay(1500)
             mainViewModel.testAllRealPing()
-            delay(5000)
+            delay(6000)
 
             while (isActive) {
-                // ذخیره نوع سورت بر اساس پینگ صعودی و تازه‌سازی لیست
-                MmkvManager.encodeSettingsInt(AppConfig.PREF_DEF_SORT_BY, 2)
-
                 val serverList: List<String> = MmkvManager.decodeServerList("") ?: emptyList()
-                val validServers: List<Pair<String, Long>> = serverList.mapNotNull { guid ->
+
+                // استخراج سرورها به همراه مقدار پینگ ثبت‌شده
+                val serversWithPing: List<Pair<String, Long>> = serverList.map { guid ->
                     val aff = MmkvManager.decodeServerAffiliationInfo(guid)
                     val ping = aff?.testDelayMillis ?: -1L
-                    if (ping > 0L) Pair(guid, ping) else null
+                    Pair(guid, ping)
                 }
 
-                val bestServer: Pair<String, Long>? = validServers.minByOrNull { it.second }
+                // مرتب‌سازی: ابتدا سرورهای سالم با کمترین پینگ، سپس سرورهای قطع یا بدون پینگ
+                val sortedList: List<String> = serversWithPing.sortedWith(
+                    compareBy<Pair<String, Long>> { if (it.second > 0L) 0 else 1 }
+                        .thenBy { if (it.second > 0L) it.second else Long.MAX_VALUE }
+                ).map { it.first }
 
+                // ذخیره لیست مرتب‌شده در دیتابیس داخلی
+                if (sortedList.isNotEmpty() && sortedList != serverList) {
+                    MmkvManager.encodeServerList("", sortedList)
+                }
+
+                // انتخاب کمترین پینگ
+                val bestServer = serversWithPing.filter { it.second > 0L }.minByOrNull { it.second }
                 bestServer?.let { target ->
                     val currentGuid = MmkvManager.getSelectServer()
                     if (target.first != currentGuid) {
-                        MmkvManager.setSelectServer(target.first)
-                        withContext(Dispatchers.Main) {
-                            mainViewModel.updateSelectedGuid(target.first)
-                            mainViewModel.onAction(MainAction.RefreshGroups)
-                            if (mainViewModel.uiState.value.isRunning) {
-                                LauncherManager.restartService(this@MainActivity)
-                            }
-                        }
+                        setSelectServer(target.first)
                     }
+                }
+
+                // رفرش نمایش صفحه در محیط کامپوز
+                withContext(Dispatchers.Main) {
+                    mainViewModel.onAction(MainAction.RefreshGroups)
                 }
 
                 delay(45_000)
                 if (mainViewModel.uiState.value.isRunning) {
                     mainViewModel.testAllRealPing()
-                    delay(5000)
+                    delay(6000)
                 }
             }
         }
