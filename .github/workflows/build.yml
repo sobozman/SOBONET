@@ -1,4 +1,4 @@
-name: Build APK
+name: Build Sobonet APK
 
 on:
   workflow_dispatch:
@@ -20,26 +20,26 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Setup Android SDK
+      - name: Setup Android SDK & NDK
         uses: android-actions/setup-android@v4
+        with:
+          packages: 'ndk;25.2.9519653'
 
-      - name: Locate and Build APK
+      - name: Build Tun Native Library
         run: |
-          if [ -f "./gradlew" ]; then
-            chmod +x ./gradlew
-            ./gradlew assembleDebug --stacktrace
-          elif [ -f "./V2rayNG/gradlew" ]; then
-            cd V2rayNG
-            chmod +x ./gradlew
-            ./gradlew assembleDebug --stacktrace
-          else
-            echo "Gradle wrapper not found, searching..."
-            find . -name "gradlew"
-            exit 1
+          export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653
+          if [ -f "./compile-hevton.sh" ]; then
+            bash ./compile-hevton.sh
           fi
 
-      - name: Upload APK
+      - name: Build APK
+        working-directory: ./V2rayNG
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload SOBONET APK
         uses: actions/upload-artifact@v4
         with:
           name: SOBONET-Debug-APK
-          path: "**/build/outputs/apk/debug/*.apk"
+          path: V2rayNG/app/build/outputs/apk/debug/*.apk
