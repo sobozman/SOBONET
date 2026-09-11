@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Source with Submodules
+      - name: Checkout Source
         uses: actions/checkout@v4
         with:
           submodules: 'recursive'
@@ -28,26 +28,27 @@ jobs:
       - name: Download Prebuilt LibXray AAR
         run: |
           mkdir -p V2rayNG/app/libs
-          # دانلود مستقیم باینری هسته
           curl -L -f -o V2rayNG/app/libs/libv2ray.aar https://github.com/2dust/AndroidLibXrayLite/releases/latest/download/libv2ray.aar || \
           curl -L -f -o V2rayNG/app/libs/libv2ray.aar https://github.com/hiddify/AndroidLibXrayLite/releases/latest/download/libv2ray.aar
 
-      - name: Build Native Hev Tunnel
+      - name: Setup Hev Tunnel Binaries
         run: |
-          if [ -f "./compile-hevton.sh" ]; then
-            chmod +x ./compile-hevton.sh
-            bash ./compile-hevton.sh
-          fi
+          mkdir -p V2rayNG/app/src/main/jniLibs/arm64-v8a
+          mkdir -p V2rayNG/app/src/main/jniLibs/armeabi-v7a
+          mkdir -p V2rayNG/app/src/main/jniLibs/x86
+          mkdir -p V2rayNG/app/src/main/jniLibs/x86_64
+          
+          curl -L -f -o V2rayNG/app/src/main/jniLibs/arm64-v8a/libhev-socks5-tunnel.so https://github.com/eycorsican/hev-socks5-tunnel/releases/latest/download/libhev-socks5-tunnel-android-arm64-v8a.so || true
+          curl -L -f -o V2rayNG/app/src/main/jniLibs/armeabi-v7a/libhev-socks5-tunnel.so https://github.com/eycorsican/hev-socks5-tunnel/releases/latest/download/libhev-socks5-tunnel-android-armeabi-v7a.so || true
 
       - name: Build APK
         working-directory: ./V2rayNG
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleFdroidDebug --no-daemon
 
       - name: Upload SOBONET APK
         uses: actions/upload-artifact@v4
         with:
-          name: SOBONET-Release-APK
-          path: V2rayNG/app/build/outputs/apk/**/*.apk
-          
+          name: SOBONET-Universal-APK
+          path: V2rayNG/app/build/outputs/apk/fdroid/debug/*universal*.apk
