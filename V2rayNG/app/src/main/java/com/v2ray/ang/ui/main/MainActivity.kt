@@ -121,25 +121,26 @@ class MainActivity : HelperBaseComponentActivity() {
             while (isActive) {
                 val serverList: List<String> = MmkvManager.decodeServerList("") ?: emptyList()
 
-                // استخراج سرورها به همراه مقدار پینگ ثبت‌شده
                 val serversWithPing: List<Pair<String, Long>> = serverList.map { guid ->
                     val aff = MmkvManager.decodeServerAffiliationInfo(guid)
                     val ping = aff?.testDelayMillis ?: -1L
                     Pair(guid, ping)
                 }
 
-                // مرتب‌سازی: ابتدا سرورهای سالم با کمترین پینگ، سپس سرورهای قطع یا بدون پینگ
-                val sortedList: List<String> = serversWithPing.sortedWith(
-                    compareBy<Pair<String, Long>> { if (it.second > 0L) 0 else 1 }
-                        .thenBy { if (it.second > 0L) it.second else Long.MAX_VALUE }
-                ).map { it.first }
+                // مرتب‌سازی لیست بر اساس کمترین پینگ
+                val sortedList: ArrayList<String> = ArrayList(
+                    serversWithPing.sortedWith(
+                        compareBy<Pair<String, Long>> { if (it.second > 0L) 0 else 1 }
+                            .thenBy { if (it.second > 0L) it.second else Long.MAX_VALUE }
+                    ).map { it.first }
+                )
 
-                // ذخیره لیست مرتب‌شده در دیتابیس داخلی
+                // ذخیره با ساختار دقیق MutableList
                 if (sortedList.isNotEmpty() && sortedList != serverList) {
-                    MmkvManager.encodeServerList("", sortedList)
+                    MmkvManager.encodeServerList(sortedList)
                 }
 
-                // انتخاب کمترین پینگ
+                // انتخاب بهترین سرور
                 val bestServer = serversWithPing.filter { it.second > 0L }.minByOrNull { it.second }
                 bestServer?.let { target ->
                     val currentGuid = MmkvManager.getSelectServer()
@@ -148,7 +149,6 @@ class MainActivity : HelperBaseComponentActivity() {
                     }
                 }
 
-                // رفرش نمایش صفحه در محیط کامپوز
                 withContext(Dispatchers.Main) {
                     mainViewModel.onAction(MainAction.RefreshGroups)
                 }
