@@ -24,11 +24,14 @@ jobs:
         with:
           ndk-version: r26b
 
-      - name: Download Valid Core Lib
+      - name: Download Official Core Lib
         run: |
           mkdir -p V2rayNG/app/libs
-          wget -q -O V2rayNG/app/libs/libv2ray.aar "https://github.com/2dust/AndroidLibXrayLite/raw/master/libv2ray.aar" || \
-          wget -q -O V2rayNG/app/libs/libv2ray.aar "https://github.com/2dust/AndroidLibV2rayLite/raw/master/libv2ray.aar"
+          LATEST_AAR=$(curl -s https://api.github.com/repos/2dust/AndroidLibXrayLite/releases/latest | grep "browser_download_url.*libv2ray.aar" | cut -d : -f 2,3 | tr -d '"[:space:]')
+          if [ -z "$LATEST_AAR" ]; then
+            LATEST_AAR="https://github.com/2dust/AndroidLibXrayLite/releases/download/v25.3.6/libv2ray.aar"
+          fi
+          curl -L -o V2rayNG/app/libs/libv2ray.aar "$LATEST_AAR"
           ls -lh V2rayNG/app/libs/
 
       - name: Build APK
