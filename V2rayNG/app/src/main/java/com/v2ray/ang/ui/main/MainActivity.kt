@@ -136,7 +136,7 @@ class MainActivity : HelperBaseComponentActivity() {
                 )
 
                 if (sortedList.isNotEmpty() && sortedList != serverList) {
-                    MmkvManager.encodeServerList(currentGroupId, sortedList)
+                    MmkvManager.encodeServerList(sortedList, currentGroupId)
                 }
 
                 val bestServer = serversWithPing.filter { it.second > 0L }.minByOrNull { it.second }
