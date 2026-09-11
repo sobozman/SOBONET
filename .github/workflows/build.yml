@@ -49,4 +49,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SOBONET-Release-APK
-          path: "**/build/outputs/apk/debug/*.apk"
+          path: V2rayNG/app/build/outputs/apk/**/*.apk
+          
