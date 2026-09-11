@@ -119,26 +119,25 @@ class MainActivity : HelperBaseComponentActivity() {
             delay(5000)
 
             while (isActive) {
-                withContext(Dispatchers.Main) {
-                    mainViewModel.sortServer(2)
-                }
+                // ذخیره نوع سورت بر اساس پینگ صعودی و تازه‌سازی لیست
+                MmkvManager.encodeSettingsInt(AppConfig.PREF_DEF_SORT_BY, 2)
 
-                delay(1000)
-
-                val serverList = MmkvManager.decodeServerList("")
-                val validServers = serverList.mapNotNull { guid ->
+                val serverList: List<String> = MmkvManager.decodeServerList("") ?: emptyList()
+                val validServers: List<Pair<String, Long>> = serverList.mapNotNull { guid ->
                     val aff = MmkvManager.decodeServerAffiliationInfo(guid)
                     val ping = aff?.testDelayMillis ?: -1L
                     if (ping > 0L) Pair(guid, ping) else null
                 }
 
-                val bestServer = validServers.minByOrNull { it.second }
+                val bestServer: Pair<String, Long>? = validServers.minByOrNull { it.second }
 
                 bestServer?.let { target ->
                     val currentGuid = MmkvManager.getSelectServer()
                     if (target.first != currentGuid) {
+                        MmkvManager.setSelectServer(target.first)
                         withContext(Dispatchers.Main) {
                             mainViewModel.updateSelectedGuid(target.first)
+                            mainViewModel.onAction(MainAction.RefreshGroups)
                             if (mainViewModel.uiState.value.isRunning) {
                                 LauncherManager.restartService(this@MainActivity)
                             }
