@@ -1,88 +1,127 @@
 package com.v2ray.ang.ui.compose
 
 import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
+import android.content.Context
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-import com.v2ray.ang.AppConfig
-import com.v2ray.ang.handler.MmkvManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-// رنگ‌های نئونی و دارک سایبرپانک SOBONET
-val CyberBg = Color(0xFF090D16)          // پس‌زمینه عمیق تیره
-val CyberSurface = Color(0xFF121826)     // پس‌زمینه کارت‌ها و ردیف‌ها
-val CyberSurfaceVariant = Color(0xFF1A2333)
-val CyberCyan = Color(0xFF00F0FF)        // نئون فیروزه‌ای اصلی
-val CyberPink = Color(0xFFFF0055)        // نئون صورتی/سرخابی
-val CyberGreen = Color(0xFF00FF9D)       // نئون سبز متصل
-val CyberText = Color(0xFFFFFFFF)        // متن سفید
-val CyberSubText = Color(0xFF8A99AD)     // متن دوم خاکستری ملایم
-val CyberBorder = Color(0xFF222F44)      // کادر دور کارت‌ها
+// پالت دارک سایبرپانک SOBONET
+val CyberDarkBg = Color(0xFF090D16)
+val CyberCardBg = Color(0xFF121826)
+val CyberCardVariant = Color(0xFF1A2333)
+val CyberNeonCyan = Color(0xFF00F0FF)
+val CyberNeonPink = Color(0xFFFF0055)
+val CyberNeonGreen = Color(0xFF00FF9D)
+val CyberTextWhite = Color(0xFFFFFFFF)
+val CyberTextDim = Color(0xFF8A99AD)
+val CyberBorderDark = Color(0xFF222F44)
 
-private val CyberDarkColorScheme = darkColorScheme(
-    primary = CyberCyan,
-    onPrimary = CyberBg,
-    primaryContainer = CyberSurfaceVariant,
-    onPrimaryContainer = CyberCyan,
-    secondary = CyberPink,
+// متغیرهای موردنیاز سایر بخش‌ها
+val colorFabActive = CyberNeonGreen
+val colorFabInactiveDark = CyberNeonPink
+val colorFabInactiveLight = CyberNeonPink
+val colorPing = CyberNeonGreen
+val colorPingRed = CyberNeonPink
+val colorConfigType = CyberNeonCyan
+
+val dividerColorDark = CyberBorderDark
+val dividerColorLight = CyberBorderDark
+
+val toastNormalBgDark = CyberCardBg
+val toastNormalBgLight = CyberCardBg
+val toastSuccessBg = CyberNeonGreen
+val toastErrorBg = CyberNeonPink
+val toastInfoBg = CyberNeonCyan
+val toastTextColor = CyberTextWhite
+
+val LocalDarkTheme = compositionLocalOf { true }
+
+private val DarkColor = darkColorScheme(
+    primary = CyberNeonCyan,
+    onPrimary = CyberDarkBg,
+    primaryContainer = CyberCardVariant,
+    onPrimaryContainer = CyberNeonCyan,
+    secondary = CyberNeonPink,
     onSecondary = Color.White,
-    secondaryContainer = CyberSurfaceVariant,
-    onSecondaryContainer = CyberPink,
-    tertiary = CyberGreen,
-    onTertiary = CyberBg,
-    background = CyberBg,
-    onBackground = CyberText,
-    surface = CyberSurface,
-    onSurface = CyberText,
-    surfaceVariant = CyberSurfaceVariant,
-    onSurfaceVariant = CyberSubText,
-    outline = CyberBorder,
-    error = CyberPink,
+    secondaryContainer = CyberCardVariant,
+    onSecondaryContainer = CyberNeonPink,
+    tertiary = CyberNeonGreen,
+    onTertiary = CyberDarkBg,
+    background = CyberDarkBg,
+    onBackground = CyberTextWhite,
+    surface = CyberCardBg,
+    onSurface = CyberTextWhite,
+    surfaceVariant = CyberCardVariant,
+    onSurfaceVariant = CyberTextDim,
+    outline = CyberBorderDark,
+    error = CyberNeonPink,
     onError = Color.White
 )
 
+object ThemeManager {
+    private val _themeMode = MutableStateFlow(AppCompatDelegate.MODE_NIGHT_YES)
+    val themeMode: StateFlow<Int> = _themeMode.asStateFlow()
+
+    fun init(context: Context) {
+        setTheme(AppCompatDelegate.MODE_NIGHT_YES)
+    }
+
+    fun setTheme(mode: Int) {
+        _themeMode.value = AppCompatDelegate.MODE_NIGHT_YES
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+    }
+
+    fun applyTheme(context: Context) {
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+    }
+}
+
+@Composable
+fun AppTheme(content: @Composable () -> Unit) {
+    Theme(darkTheme = true, dynamicColor = false, content = content)
+}
+
 @Composable
 fun Theme(
-    darkTheme: Boolean = true, // تم همیشه روی دارک قفل است
+    darkTheme: Boolean = true,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = CyberDarkColorScheme
+    val colorScheme = DarkColor
     val view = LocalView.current
 
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = CyberBg.value.toLong().toInt()
-            window.navigationBarColor = CyberBg.value.toLong().toInt()
+            window.statusBarColor = CyberDarkBg.value.toLong().toInt()
+            window.navigationBarColor = CyberDarkBg.value.toLong().toInt()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
             WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = false
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        content = {
-            Box(modifier = Modifier.fillMaxSize()) {
-                content()
+    CompositionLocalProvider(LocalDarkTheme provides true) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            content = {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    content()
+                }
             }
-        }
-    )
+        )
+    }
 }
