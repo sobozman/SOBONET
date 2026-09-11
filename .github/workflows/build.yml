@@ -24,16 +24,13 @@ jobs:
         with:
           ndk-version: r26b
 
-      - name: Download Compatible Core Lib
+      - name: Download Official Core AAR
         run: |
           mkdir -p V2rayNG/app/libs
-          mkdir -p app/libs
-          # دریافت جدیدترین هسته رسمی کامپایل‌شده که تمام متدهای جدید CoreNativeManager را دارد
-          curl -L -f -o V2rayNG/app/libs/libv2ray.aar "https://github.com/2dust/AndroidLibXrayLite/releases/download/v25.3.6/libv2ray.aar" || \
-          curl -L -f -o V2rayNG/app/libs/libv2ray.aar "https://github.com/2dust/AndroidLibXrayLite/releases/latest/download/libv2ray.aar"
-          
-          # کپی فایل در مسیرهای احتمالی
-          cp V2rayNG/app/libs/libv2ray.aar app/libs/ 2>/dev/null || true
+          # دریافت نسخه جدید هسته که کلاس‌های CoreController و CoreCallbackHandler در آن قرار دارند
+          curl -L -f -o V2rayNG/app/libs/libv2ray.aar "https://github.com/2dust/AndroidLibCore/releases/latest/download/libv2ray.aar" || \
+          curl -L -f -o V2rayNG/app/libs/libv2ray.aar "https://github.com/2dust/AndroidLibCore/releases/download/v1.0.0/libv2ray.aar" || \
+          curl -L -f -o V2rayNG/app/libs/libv2ray.aar "https://github.com/2dust/v2rayNG/releases/download/1.9.29/libv2ray.aar"
           ls -lh V2rayNG/app/libs/libv2ray.aar
 
       - name: Build Signed APK
