@@ -21,7 +21,7 @@ class AngApplication : Application() {
      * @param base The base context.
      */
     override fun attachBaseContext(base: Context?) {
-        super.attachBaseContext(base?.let(ContextCompat::getContextForLanguage))
+        super.attachBaseContext(base?.let { ContextCompat.getContextForLanguage(it) } ?: base)
         application = this
     }
 
@@ -39,13 +39,17 @@ class AngApplication : Application() {
 
         AppLocaleManager.initialize(this)
 
-        // Initialize WorkManager with the custom configuration
-        WorkManager.initialize(this, workManagerConfiguration)
+        // Initialize WorkManager with safety guard to avoid already-initialized crash
+        try {
+            WorkManager.initialize(this, workManagerConfiguration)
+        } catch (e: Exception) {
+            // WorkManager already initialized
+        }
 
         // Ensure critical preference defaults are present in MMKV early
         SettingsManager.initApp(this)
 
         // Initialize theme state from MMKV
-        ThemeManager.refresh()
+        ThemeManager.refresh(this)
     }
 }
