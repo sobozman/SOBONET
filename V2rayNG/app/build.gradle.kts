@@ -39,13 +39,23 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        getByName("debug") {
+            // از کلید امضای پیش‌فرض دیباگ برای فعال‌سازی نصب پکیج استفاده می‌شود
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
@@ -151,7 +161,6 @@ android {
             useLegacyPackaging = true
         }
     }
-
 }
 
 dependencies {
@@ -190,7 +199,7 @@ dependencies {
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.compose)
-    implementation(libs.core) // zxing core
+    implementation(libs.core)
 
     // AndroidX Lifecycle and Architecture Components
     implementation(libs.lifecycle.viewmodel.ktx)
