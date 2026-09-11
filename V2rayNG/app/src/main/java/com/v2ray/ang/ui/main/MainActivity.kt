@@ -49,6 +49,7 @@ import com.v2ray.ang.ui.userasset.UserAssetActivity
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -59,7 +60,7 @@ class MainActivity : HelperBaseComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels {
         MainViewModel.Factory(application, MainRepository(application as AngApplication))
     }
-    private var smartMonitorJob: kotlinx.coroutines.Job? = null
+    private var smartMonitorJob: Job? = null
 
     private val requestVpnPermission =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -118,14 +119,21 @@ class MainActivity : HelperBaseComponentActivity() {
             delay(4000)
 
             while (isActive) {
-                val servers = mainViewModel.uiState.value.servers
-                val bestServer = servers.filter { it.delay > 0 }.minByOrNull { it.delay }
+                val serverList = MmkvManager.decodeServerList()
+                val validServers = serverList.mapNotNull { guid ->
+                    val config = MmkvManager.decodeServerConfig(guid) ?: return@mapNotNull null
+                    val aff = MmkvManager.decodeServerAffiliationInfo(guid)
+                    val ping = aff?.testDelayMillis ?: -1L
+                    if (ping > 0L) Pair(guid, ping) else null
+                }
+
+                val bestServer = validServers.minByOrNull { it.second }
 
                 bestServer?.let { target ->
-                    val currentGuid = mainViewModel.uiState.value.selectedGuid
-                    if (target.guid != currentGuid) {
+                    val currentGuid = MmkvManager.getSelectServer()
+                    if (target.first != currentGuid) {
                         withContext(Dispatchers.Main) {
-                            mainViewModel.updateSelectedGuid(target.guid)
+                            mainViewModel.updateSelectedGuid(target.first)
                             if (mainViewModel.uiState.value.isRunning) {
                                 LauncherManager.restartService(this@MainActivity)
                             }
