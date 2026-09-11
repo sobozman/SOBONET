@@ -115,10 +115,16 @@ class MainActivity : HelperBaseComponentActivity() {
         smartMonitorJob?.cancel()
         smartMonitorJob = lifecycleScope.launch(Dispatchers.IO) {
             delay(1500)
-            mainViewModel.testAllRealPing()
-            delay(4000)
+            mainViewModel.onAction(MainAction.TestAllRealPing)
+            delay(5000)
 
             while (isActive) {
+                withContext(Dispatchers.Main) {
+                    mainViewModel.onAction(MainAction.SortServer(2))
+                }
+
+                delay(1000)
+
                 val serverList = MmkvManager.decodeServerList("")
                 val validServers = serverList.mapNotNull { guid ->
                     val aff = MmkvManager.decodeServerAffiliationInfo(guid)
@@ -132,7 +138,7 @@ class MainActivity : HelperBaseComponentActivity() {
                     val currentGuid = MmkvManager.getSelectServer()
                     if (target.first != currentGuid) {
                         withContext(Dispatchers.Main) {
-                            mainViewModel.updateSelectedGuid(target.first)
+                            mainViewModel.onAction(MainAction.SelectServer(target.first))
                             if (mainViewModel.uiState.value.isRunning) {
                                 LauncherManager.restartService(this@MainActivity)
                             }
@@ -140,10 +146,10 @@ class MainActivity : HelperBaseComponentActivity() {
                     }
                 }
 
-                delay(60_000)
+                delay(45_000)
                 if (mainViewModel.uiState.value.isRunning) {
-                    mainViewModel.testAllRealPing()
-                    delay(4000)
+                    mainViewModel.onAction(MainAction.TestAllRealPing)
+                    delay(5000)
                 }
             }
         }
