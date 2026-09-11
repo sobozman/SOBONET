@@ -1,4 +1,4 @@
-name: Build Sobonet APK
+name: Build SOBONET APK
 
 on:
   workflow_dispatch:
@@ -6,47 +6,38 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
         with:
-          submodules: 'recursive'
+          submodules: recursive
           fetch-depth: 0
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
 
       - name: Setup Android NDK
         uses: nttld/setup-ndk@v1
         with:
-          ndk-version: r25c
+          ndk-version: r26b
 
-      - name: Download Prebuilt LibXray AAR
+      - name: Download Official Core AAR
         run: |
           mkdir -p V2rayNG/app/libs
-          curl -L -f -o V2rayNG/app/libs/libv2ray.aar https://github.com/2dust/AndroidLibXrayLite/releases/latest/download/libv2ray.aar || \
-          curl -L -f -o V2rayNG/app/libs/libv2ray.aar https://github.com/hiddify/AndroidLibXrayLite/releases/latest/download/libv2ray.aar
-
-      - name: Compile Hev Tunnel
-        run: |
-          export NDK_HOME=$ANDROID_NDK_HOME
-          chmod +x compile-hevtun.sh
-          bash compile-hevtun.sh
-          mkdir -p V2rayNG/app/libs
-          cp -r libs/* V2rayNG/app/libs/ || true
+          curl -L -o V2rayNG/app/libs/libv2ray.aar https://github.com/2dust/AndroidLibXrayLite/releases/download/v25.3.6/libv2ray.aar || \
+          curl -L -o V2rayNG/app/libs/libv2ray.aar https://github.com/2dust/AndroidLibV2rayLite/releases/latest/download/libv2ray.aar
 
       - name: Build APK
         working-directory: ./V2rayNG
         run: |
           chmod +x gradlew
-          ./gradlew assembleFdroidDebug --no-daemon
+          ./gradlew assembleFdroidDebug --stacktrace --no-daemon
 
       - name: Upload SOBONET APK
         uses: actions/upload-artifact@v4
         with:
-          name: SOBONET-Universal-APK
-          path: V2rayNG/app/build/outputs/apk/fdroid/debug/*universal*.apk
+          name: SOBONET-APK
+          path: V2rayNG/app/build/outputs/apk/fdroid/debug/*.apk
