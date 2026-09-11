@@ -85,6 +85,18 @@ object ThemeManager {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
     }
 
+    fun setThemeMode(mode: String?) {
+        setTheme(AppCompatDelegate.MODE_NIGHT_YES)
+    }
+
+    fun setDynamicColorEnabled(enabled: Boolean) {
+        // تم نئونی دارک روی تمام نسخه‌ها ثابت می‌ماند
+    }
+
+    fun refresh(context: Context? = null) {
+        setTheme(AppCompatDelegate.MODE_NIGHT_YES)
+    }
+
     fun applyTheme(context: Context) {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
     }
