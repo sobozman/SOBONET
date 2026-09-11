@@ -49,6 +49,8 @@ import com.v2ray.ang.ui.userasset.UserAssetActivity
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -57,6 +59,7 @@ class MainActivity : HelperBaseComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels {
         MainViewModel.Factory(application, MainRepository(application as AngApplication))
     }
+    private var smartMonitorJob: kotlinx.coroutines.Job? = null
 
     private val requestVpnPermission =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -95,6 +98,48 @@ class MainActivity : HelperBaseComponentActivity() {
         mainViewModel.onAction(MainAction.Initialize)
 
         checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {}
+    }
+
+    override fun onResume() {
+        super.onResume()
+        startSmartAutoConnect()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        smartMonitorJob?.cancel()
+    }
+
+    private fun startSmartAutoConnect() {
+        smartMonitorJob?.cancel()
+        smartMonitorJob = lifecycleScope.launch(Dispatchers.IO) {
+            delay(1500)
+            mainViewModel.testAllRealPing()
+            delay(4000)
+
+            while (isActive) {
+                val servers = mainViewModel.uiState.value.servers
+                val bestServer = servers.filter { it.delay > 0 }.minByOrNull { it.delay }
+
+                bestServer?.let { target ->
+                    val currentGuid = mainViewModel.uiState.value.selectedGuid
+                    if (target.guid != currentGuid) {
+                        withContext(Dispatchers.Main) {
+                            mainViewModel.updateSelectedGuid(target.guid)
+                            if (mainViewModel.uiState.value.isRunning) {
+                                LauncherManager.restartService(this@MainActivity)
+                            }
+                        }
+                    }
+                }
+
+                delay(60_000)
+                if (mainViewModel.uiState.value.isRunning) {
+                    mainViewModel.testAllRealPing()
+                    delay(4000)
+                }
+            }
+        }
     }
 
     @Composable
