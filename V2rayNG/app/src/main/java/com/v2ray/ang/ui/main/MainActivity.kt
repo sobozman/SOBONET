@@ -119,9 +119,8 @@ class MainActivity : HelperBaseComponentActivity() {
             delay(4000)
 
             while (isActive) {
-                val serverList = MmkvManager.decodeServerList()
+                val serverList = MmkvManager.decodeServerList("")
                 val validServers = serverList.mapNotNull { guid ->
-                    val config = MmkvManager.decodeServerConfig(guid) ?: return@mapNotNull null
                     val aff = MmkvManager.decodeServerAffiliationInfo(guid)
                     val ping = aff?.testDelayMillis ?: -1L
                     if (ping > 0L) Pair(guid, ping) else null
