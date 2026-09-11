@@ -23,14 +23,23 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Build Debug APK
+      - name: Locate and Build APK
         run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+            ./gradlew assembleDebug --stacktrace
+          elif [ -f "./V2rayNG/gradlew" ]; then
+            cd V2rayNG
+            chmod +x ./gradlew
+            ./gradlew assembleDebug --stacktrace
+          else
+            echo "Gradle wrapper not found, searching..."
+            find . -name "gradlew"
+            exit 1
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Sobonet-APK
-          path: app/build/outputs/apk/debug/*.apk
-          
+          name: SOBONET-Debug-APK
+          path: "**/build/outputs/apk/debug/*.apk"
