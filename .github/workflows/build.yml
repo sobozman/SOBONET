@@ -24,20 +24,21 @@ jobs:
         with:
           ndk-version: r26b
 
-      - name: Download Official Core AAR
+      - name: Download Valid Core Lib
         run: |
           mkdir -p V2rayNG/app/libs
-          curl -L -o V2rayNG/app/libs/libv2ray.aar https://github.com/2dust/AndroidLibXrayLite/releases/download/v25.3.6/libv2ray.aar || \
-          curl -L -o V2rayNG/app/libs/libv2ray.aar https://github.com/2dust/AndroidLibV2rayLite/releases/latest/download/libv2ray.aar
+          wget -q -O V2rayNG/app/libs/libv2ray.aar "https://github.com/2dust/AndroidLibXrayLite/raw/master/libv2ray.aar" || \
+          wget -q -O V2rayNG/app/libs/libv2ray.aar "https://github.com/2dust/AndroidLibV2rayLite/raw/master/libv2ray.aar"
+          ls -lh V2rayNG/app/libs/
 
       - name: Build APK
         working-directory: ./V2rayNG
         run: |
           chmod +x gradlew
-          ./gradlew assembleFdroidDebug --stacktrace --no-daemon
+          ./gradlew assembleFdroidRelease --no-daemon
 
       - name: Upload SOBONET APK
         uses: actions/upload-artifact@v4
         with:
           name: SOBONET-APK
-          path: V2rayNG/app/build/outputs/apk/fdroid/debug/*.apk
+          path: V2rayNG/app/build/outputs/apk/fdroid/release/*.apk
