@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout Source with Submodules
         uses: actions/checkout@v4
         with:
           submodules: 'recursive'
@@ -20,15 +20,22 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Setup Android SDK & NDK
-        uses: android-actions/setup-android@v4
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
         with:
-          packages: 'ndk;25.2.9519653'
+          ndk-version: r25c
 
-      - name: Build Tun Native Library
+      - name: Download Prebuilt LibXray AAR
         run: |
-          export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653
+          mkdir -p V2rayNG/app/libs
+          # دانلود مستقیم باینری هسته
+          curl -L -f -o V2rayNG/app/libs/libv2ray.aar https://github.com/2dust/AndroidLibXrayLite/releases/latest/download/libv2ray.aar || \
+          curl -L -f -o V2rayNG/app/libs/libv2ray.aar https://github.com/hiddify/AndroidLibXrayLite/releases/latest/download/libv2ray.aar
+
+      - name: Build Native Hev Tunnel
+        run: |
           if [ -f "./compile-hevton.sh" ]; then
+            chmod +x ./compile-hevton.sh
             bash ./compile-hevton.sh
           fi
 
@@ -41,5 +48,5 @@ jobs:
       - name: Upload SOBONET APK
         uses: actions/upload-artifact@v4
         with:
-          name: SOBONET-Debug-APK
-          path: V2rayNG/app/build/outputs/apk/debug/*.apk
+          name: SOBONET-Release-APK
+          path: "**/build/outputs/apk/debug/*.apk"
