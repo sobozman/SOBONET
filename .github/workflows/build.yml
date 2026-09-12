@@ -24,20 +24,56 @@ jobs:
         with:
           ndk-version: r26b
 
-      - name: Extract Official Core From v2rayNG APK
+      - name: Generate Valid libv2ray AAR
         run: |
           mkdir -p V2rayNG/app/libs
-          # دانلود فایل نصبی رسمی v2rayNG
+          rm -rf tmp_build
+          mkdir -p tmp_build/aar_root/jni
+          cd tmp_build
+
+          # 1. دانلود نسخه رسمی v2rayNG
           curl -L -o official.apk "https://github.com/2dust/v2rayNG/releases/download/1.9.29/v2rayNG_1.9.29_universal.apk"
-          
-          # استخراج تمام لایبرری‌های native هسته (libv2ray.so و ...)
-          unzip -q official.apk -d extracted
-          mkdir -p V2rayNG/app/src/main/jniLibs
-          cp -r extracted/lib/* V2rayNG/app/src/main/jniLibs/
-          
-          # دانلود AAR رسمی پایه
-          curl -L -o V2rayNG/app/libs/libv2ray.aar "https://raw.githubusercontent.com/2dust/AndroidLibXrayLite/master/libv2ray.aar" || true
-          ls -lh V2rayNG/app/src/main/jniLibs/
+          unzip -q official.apk
+
+          # 2. کپی فقط لایبرری‌های اصلی هسته v2ray برای جلوگیری از ارور Duplicate
+          for abi in arm64-v8a armeabi-v7a x86 x86_64; do
+            if [ -d "lib/$abi" ]; then
+              mkdir -p "aar_root/jni/$abi"
+              cp lib/$abi/libv2ray.so aar_root/jni/$abi/ 2>/dev/null || true
+              cp lib/$abi/libtun2socks.so aar_root/jni/$abi/ 2>/dev/null || true
+            fi
+          done
+
+          # 3. تبدیل کلاس‌های dex رسمی به jar
+          wget -q https://github.com/pxb1988/dex2jar/releases/download/v2.4/dex-tools-v2.4.zip
+          unzip -q dex-tools-v2.4.zip
+          chmod +x dex-tools-v2.4/d2j-dex2jar.sh
+          ./dex-tools-v2.4/d2j-dex2jar.sh -f -o full_classes.jar classes.dex
+
+          # 4. جداسازی کلاس‌های مربوط به libv2ray
+          mkdir -p jar_classes
+          unzip -q full_classes.jar -d jar_classes
+          mkdir -p extracted_core
+          if [ -d "jar_classes/libv2ray" ]; then
+            cp -r jar_classes/libv2ray extracted_core/
+          fi
+          cd extracted_core
+          zip -qr ../aar_root/classes.jar .
+          cd ..
+
+          # 5. ساخت AndroidManifest الزامی برای AAR
+          cat << 'EOF' > aar_root/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="libv2ray" />
+          EOF
+
+          # 6. پک کردن AAR استاندارد و معتبر
+          cd aar_root
+          zip -qr ../libv2ray.aar .
+          cd ..
+
+          cp libv2ray.aar ../V2rayNG/app/libs/
+          cd ..
+          ls -lh V2rayNG/app/libs/libv2ray.aar
 
       - name: Build Signed APK
         working-directory: ./V2rayNG
