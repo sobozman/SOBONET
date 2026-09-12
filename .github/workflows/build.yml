@@ -24,17 +24,30 @@ jobs:
         with:
           ndk-version: r26b
 
-      - name: Fetch Official Native Core AAR
+      - name: Inject Core and Assets
         run: |
           mkdir -p V2rayNG/app/libs
-          # دریافت مستقیم فایل باینری رسمی که شامل پکیج go.Seq و تمام کلاس‌های CoreController است
-          AAR_URL=$(curl -s https://api.github.com/repos/2dust/AndroidLibXrayLite/releases/latest | grep "browser_download_url.*\.aar" | head -n 1 | cut -d '"' -f 4)
-          if [ -z "$AAR_URL" ]; then
-            AAR_URL="https://github.com/2dust/AndroidLibXrayLite/releases/download/v25.3.6/AndroidLibXrayLite.aar"
-          fi
-          echo "Downloading from: $AAR_URL"
-          curl -L -f -o V2rayNG/app/libs/libv2ray.aar "$AAR_URL"
-          ls -lh V2rayNG/app/libs/libv2ray.aar
+          mkdir -p V2rayNG/app/src/main/assets
+          
+          # دانلود کتابخانه باینری هسته
+          curl -L -f -o V2rayNG/app/libs/libv2ray.aar "https://github.com/2dust/AndroidLibXrayLite/releases/download/v25.3.6/AndroidLibXrayLite.aar"
+          
+          # فایل‌های ضروری دیتابیس روتینگ برای روشن ماندن پورت 10808
+          curl -L -o V2rayNG/app/src/main/assets/geoip.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat"
+          curl -L -o V2rayNG/app/src/main/assets/geosite.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat"
+          
+          # دریافت باینری تانل برای فعال‌سازی تونل VPN
+          curl -L -o official.apk "https://github.com/2dust/v2rayNG/releases/download/1.9.29/v2rayNG_1.9.29_universal.apk"
+          unzip -q official.apk -d extracted_official
+          mkdir -p V2rayNG/app/src/main/jniLibs
+          for abi in arm64-v8a armeabi-v7a x86 x86_64; do
+            if [ -d "extracted_official/lib/$abi" ]; then
+              mkdir -p "V2rayNG/app/src/main/jniLibs/$abi"
+              cp extracted_official/lib/$abi/libhev*.so "V2rayNG/app/src/main/jniLibs/$abi/" 2>/dev/null || true
+            fi
+          done
+          
+          ls -lh V2rayNG/app/src/main/assets/
 
       - name: Build Signed APK
         working-directory: ./V2rayNG
