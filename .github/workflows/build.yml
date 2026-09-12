@@ -24,14 +24,20 @@ jobs:
         with:
           ndk-version: r26b
 
-      - name: Download Official Core AAR
+      - name: Extract Official Core From v2rayNG APK
         run: |
           mkdir -p V2rayNG/app/libs
-          # دریافت نسخه جدید هسته که کلاس‌های CoreController و CoreCallbackHandler در آن قرار دارند
-          curl -L -f -o V2rayNG/app/libs/libv2ray.aar "https://github.com/2dust/AndroidLibCore/releases/latest/download/libv2ray.aar" || \
-          curl -L -f -o V2rayNG/app/libs/libv2ray.aar "https://github.com/2dust/AndroidLibCore/releases/download/v1.0.0/libv2ray.aar" || \
-          curl -L -f -o V2rayNG/app/libs/libv2ray.aar "https://github.com/2dust/v2rayNG/releases/download/1.9.29/libv2ray.aar"
-          ls -lh V2rayNG/app/libs/libv2ray.aar
+          # دانلود فایل نصبی رسمی v2rayNG
+          curl -L -o official.apk "https://github.com/2dust/v2rayNG/releases/download/1.9.29/v2rayNG_1.9.29_universal.apk"
+          
+          # استخراج تمام لایبرری‌های native هسته (libv2ray.so و ...)
+          unzip -q official.apk -d extracted
+          mkdir -p V2rayNG/app/src/main/jniLibs
+          cp -r extracted/lib/* V2rayNG/app/src/main/jniLibs/
+          
+          # دانلود AAR رسمی پایه
+          curl -L -o V2rayNG/app/libs/libv2ray.aar "https://raw.githubusercontent.com/2dust/AndroidLibXrayLite/master/libv2ray.aar" || true
+          ls -lh V2rayNG/app/src/main/jniLibs/
 
       - name: Build Signed APK
         working-directory: ./V2rayNG
