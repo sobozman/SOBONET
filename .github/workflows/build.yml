@@ -24,64 +24,16 @@ jobs:
         with:
           ndk-version: r26b
 
-      - name: Setup Valid libv2ray AAR
+      - name: Fetch Official Native Core AAR
         run: |
           mkdir -p V2rayNG/app/libs
-          rm -rf tmp_extract
-          mkdir -p tmp_extract/aar/jni
-          cd tmp_extract
-
-          # دانلود APK رسمی که هسته کامل در آن قرار دارد
-          curl -L -o official.apk "https://github.com/2dust/v2rayNG/releases/download/1.9.29/v2rayNG_1.9.29_universal.apk"
-          unzip -q official.apk
-
-          # استخراج کتابخانه‌های بومی Go/Core
-          for abi in arm64-v8a armeabi-v7a x86 x86_64; do
-            if [ -d "lib/$abi" ]; then
-              mkdir -p "aar/jni/$abi"
-              cp lib/$abi/libv2ray.so aar/jni/$abi/ 2>/dev/null || true
-              cp lib/$abi/libtun2socks.so aar/jni/$abi/ 2>/dev/null || true
-            fi
-          done
-
-          # تبدیل همه دکس‌ها به جار
-          wget -q https://github.com/pxb1988/dex2jar/releases/download/v2.4/dex-tools-v2.4.zip
-          unzip -q dex-tools-v2.4.zip
-          chmod +x dex-tools-v2.4/d2j-dex2jar.sh
-
-          mkdir -p all_classes
-          for dex in classes*.dex; do
-            ./dex-tools-v2.4/d2j-dex2jar.sh -f -o temp.jar "$dex" 2>/dev/null || true
-            if [ -f temp.jar ]; then
-              unzip -qo temp.jar -d all_classes/
-              rm -f temp.jar
-            fi
-          done
-
-          # بسته‌بندی کلاس‌های libv2ray
-          mkdir -p aar_classes
-          if [ -d "all_classes/libv2ray" ]; then
-            cp -r all_classes/libv2ray aar_classes/
-          else
-            cp -r all_classes/* aar_classes/
+          # دریافت مستقیم فایل باینری رسمی که شامل پکیج go.Seq و تمام کلاس‌های CoreController است
+          AAR_URL=$(curl -s https://api.github.com/repos/2dust/AndroidLibXrayLite/releases/latest | grep "browser_download_url.*\.aar" | head -n 1 | cut -d '"' -f 4)
+          if [ -z "$AAR_URL" ]; then
+            AAR_URL="https://github.com/2dust/AndroidLibXrayLite/releases/download/v25.3.6/AndroidLibXrayLite.aar"
           fi
-
-          cd aar_classes
-          jar cvf ../aar/classes.jar .
-          cd ..
-
-          # تعریف مانیفست
-          cat << 'EOF' > aar/AndroidManifest.xml
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="libv2ray" />
-          EOF
-
-          # ساخت AAR نهایی
-          cd aar
-          jar cvf ../libv2ray.aar .
-          cd ..
-
-          cp libv2ray.aar ../V2rayNG/app/libs/
-          cd ..
+          echo "Downloading from: $AAR_URL"
+          curl -L -f -o V2rayNG/app/libs/libv2ray.aar "$AAR_URL"
           ls -lh V2rayNG/app/libs/libv2ray.aar
 
       - name: Build Signed APK
